@@ -1,11 +1,13 @@
-const https = require("https");
-const fs = require("fs");
+const http = require("http");
 const ws = require("ws");
 
-const server = https.createServer({
-	cert: fs.readFileSync("./cert.pem"),
-	key: fs.readFileSync("./key.pem"),
+const server = http.createServer();
+
+server.on("request", (req, res) => {
+	res.writeHead(200);
+	res.end("WebSocket server is running");
 });
+
 const wss = new ws.WebSocketServer({ server });
 
 wss.on("connection", function connection(ws) {
@@ -18,4 +20,7 @@ wss.on("connection", function connection(ws) {
 	ws.send("something");
 });
 
-server.listen(443);
+const port = process.env.PORT || 3000;
+server.listen(port, "0.0.0.0", () => {
+	console.log(`Server is running on port ${port}`);
+});
