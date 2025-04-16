@@ -10,14 +10,49 @@ server.on("request", (req, res) => {
 
 const wss = new ws.WebSocketServer({ server });
 
-wss.on("connection", function connection(ws) {
-	ws.on("error", console.error);
+let clients = [];
+/**@type Map<Number, Set<WebSocket>> */
+const rooms = new Map();
 
-	ws.on("message", function message(data) {
-		console.log("received: %s", data);
+wss.on("connection", ws => {
+	console.log("New client connected");
+	clients.push(ws);
+
+	ws.onmessage = message => {
+		const data = JSON.parse(message);
+
+		// 加入房间
+		const code = data.code;
+		const room = rooms.get(code);
+		if (data.type == "join") {
+			if (!room) {
+				rooms.set(code, new Set([ws]));
+			} else {
+				room.add(ws);
+				if (room.size > 1) {
+					room.forEach(client => {
+						if (client !== ws && client.readyState === ws.OPEN) {
+							client.send(JSON.stringify({ type: "join" }));
+						}
+					});
+				}
+			}
+			return;
+		}
+
+		// 广播消息给其他客户端
+		if (room)
+			room.forEach(client => {
+				if (client !== ws && client.readyState === ws.OPEN) {
+					client.send(JSON.stringify(data));
+				}
+			});
+	};
+
+	ws.on("close", () => {
+		console.log("Client disconnected");
+		clients = clients.filter(client => client !== ws);
 	});
-
-	ws.send("something");
 });
 
 const port = process.env.PORT || 3000;
