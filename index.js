@@ -18,7 +18,7 @@ wss.on("connection", ws => {
 	console.log("New client connected");
 	clients.push(ws);
 
-	ws.onmessage = message => {
+	ws.on("message", message => {
 		const data = JSON.parse(message);
 
 		// 加入房间
@@ -47,7 +47,7 @@ wss.on("connection", ws => {
 					client.send(JSON.stringify(data));
 				}
 			});
-	};
+	});
 
 	ws.on("close", () => {
 		console.log("Client disconnected");
